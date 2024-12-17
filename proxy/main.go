@@ -2,28 +2,39 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
+
+	_ "proxy/docs"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// @title Address API
+// @title Swagger Example API
 // @version 1.0
-// @description API для поиска
-// @host localhost:8080
-// @BasePath /api
+// @description This is a sample server Petstore server.
+// @termsOfService http://swagger.io/terms/
 
-// @RequestAddressSearch представляет запрос для поиска
-// @Description Этот эндпоинт позволяет получить адрес по наименованию
-// @Param address body ResponseAddress true "Географические координаты"
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
 
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host petstore.swagger.io
+// @BasePath /v2
 type RequestAddressSearch struct {
 	Query string `json:"query"`
 }
@@ -39,6 +50,12 @@ type ResponseAddress struct {
 	} `json:"suggestions"`
 }
 
+type ErrorResponse struct {
+	BadRequest      string `json:"400"`
+	DadataBad       string `json:"500"`
+	SuccefulRequest string `json:"200"`
+}
+
 var (
 	tokenAuth *jwtauth.JWTAuth
 	users     = make(map[string]string)
@@ -52,6 +69,13 @@ type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
+// @Summary Register a new user
+// @Description This endpoint allows you to register a new user
+// @Param user body User true "User registration details"
+// @Router /api/register [post]
+// @Success 201 {string} string "User registered successfully"
+// @Failure 400 {string} string "Invalid input"
 
 func Register(w http.ResponseWriter, r *http.Request) {
 	var user User
@@ -92,10 +116,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// @Success 200 {object} ResponseAddress
-// @Failure 400 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// Логика геокодирования
+// @Summary Get Geo Coordinates
+// @Description This endpoint allows you to get geo coordinates by address
+// @Param address body RequestAddressSearch true "Address search query"
+// @Router /api/address/geocode [post]
+// @Success 200 {object} ResponseAddress "Успешное выполнение"
+// @Success 400 {object} ErrorResponse "Ошибка запроса"
+// @Success 500 {object} ErrorResponse "Ошибка подключения к серверу"
 
 func getGeoCoordinates(query string) (string, error) {
 	url := "http://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
@@ -138,31 +165,49 @@ func getGeoCoordinates(query string) (string, error) {
 }
 
 func main() {
+	signalChan := make(chan os.Signal, 1)
+
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
+	}
 
-	r.Post("/api/register", Register)
-	r.Post("/api/login", Login)
-	r.Post("/api/address/geocode", func(w http.ResponseWriter, r *http.Request) {
-		geo, err := getGeoCoordinates("москва сухонская 11") // Здесь можно передать запрос из тела
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Write([]byte(geo))
-	})
+	go func() {
+		r.Use(middleware.Logger)
+		r.Get("/swagger/*", httpSwagger.WrapHandler)
+		r.Post("/api/register", Register)
+		r.Post("/api/login", Login)
+		r.Post("/api/address/geocode", func(w http.ResponseWriter, r *http.Request) {
+			geo, err := getGeoCoordinates("москва сухонская 11") // Здесь можно передать запрос из тела
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Write([]byte(geo))
+		})
 
-	r.Post("/api/address/search", func(w http.ResponseWriter, r *http.Request) {
-		geo, err := getGeoCoordinates("москва сухонская 11") // Здесь можно передать запрос из тела
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		r.Post("/api/address/search", func(w http.ResponseWriter, r *http.Request) {
+			geo, err := getGeoCoordinates("москва сухонская 11") // Здесь можно передать запрос из тела
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-		proxyMiddleware(geo)(w, r)
-	})
+			proxyMiddleware(geo)(w, r)
+		})
 
-	http.ListenAndServe(":8080", r)
+		http.ListenAndServe(":8080", r)
+	}()
+	<-signalChan
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		fmt.Printf("Ошибка при завершении %v", err)
+	} else {
+		fmt.Printf("Grace close")
+	}
 }
 
 func proxyMiddleware(geo string) http.HandlerFunc {
