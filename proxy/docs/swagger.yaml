@@ -1,4 +1,3 @@
-basePath: /v2
 definitions:
   main.ErrorResponse:
     description: Ошибка, возникающая при обработке запроса

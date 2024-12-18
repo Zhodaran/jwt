@@ -35,7 +35,7 @@ import (
 // @description This is a sample server Petstore server.
 
 // @Host("api.swagger.com")
-// @BasePath /v2
+// @BasePath
 type RequestAddressSearch struct {
 	Query string `json:"query"`
 }
