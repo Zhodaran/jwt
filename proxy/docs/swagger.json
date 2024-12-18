@@ -3,19 +3,107 @@
     "info": {
         "description": "This is a sample server Petstore server.",
         "title": "Swagger Example API",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
+        "contact": {},
         "version": "1.0"
     },
-    "host": "petstore.swagger.io",
+    "host": "localhost:8080",
     "basePath": "/v2",
-    "paths": {}
+    "paths": {
+        "/api/address/geocode": {
+            "post": {
+                "description": "This endpoint allows you to get geo coordinates by address",
+                "summary": "Get Geo Coordinates",
+                "parameters": [
+                    {
+                        "description": "Address search query",
+                        "name": "address",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.RequestAddressSearch"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное выполнение",
+                        "schema": {
+                            "$ref": "#/definitions/main.ResponseAddress"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка запроса",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка подключения к серверу",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "main.ErrorResponse": {
+            "description": "Ошибка, возникающая при обработке запроса",
+            "type": "object",
+            "properties": {
+                "200": {
+                    "type": "string"
+                },
+                "400": {
+                    "type": "string"
+                },
+                "500": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.RequestAddressSearch": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.ResponseAddress": {
+            "type": "object",
+            "properties": {
+                "suggestions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "data": {
+                                "$ref": "#/definitions/main.ResponseAddresses"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "main.ResponseAddresses": {
+            "type": "object",
+            "properties": {
+                "geo_lat": {
+                    "type": "string"
+                },
+                "geo_lon": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
 }

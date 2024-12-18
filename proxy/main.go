@@ -1,3 +1,12 @@
+// @title Address API
+// @version 1.0
+// @description This is a simple API for address geocoding and user authentication.
+// @host localhost:8080
+// @BasePath /api
+// @securityDefinitions.apiKey ApiKeyAuth
+// @in header
+// @name Authorization
+
 package main
 
 import (
@@ -24,16 +33,8 @@ import (
 // @title Swagger Example API
 // @version 1.0
 // @description This is a sample server Petstore server.
-// @termsOfService http://swagger.io/terms/
 
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host petstore.swagger.io
+// @Host("api.swagger.com")
 // @BasePath /v2
 type RequestAddressSearch struct {
 	Query string `json:"query"`
@@ -50,6 +51,9 @@ type ResponseAddress struct {
 	} `json:"suggestions"`
 }
 
+// ErrorResponse представляет ответ с ошибкой
+// @Description Ошибка, возникающая при обработке запроса
+// @Success 400 {object} ErrorResponse
 type ErrorResponse struct {
 	BadRequest      string `json:"400"`
 	DadataBad       string `json:"500"`
@@ -69,13 +73,6 @@ type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
-
-// @Summary Register a new user
-// @Description This endpoint allows you to register a new user
-// @Param user body User true "User registration details"
-// @Router /api/register [post]
-// @Success 201 {string} string "User registered successfully"
-// @Failure 400 {string} string "Invalid input"
 
 func Register(w http.ResponseWriter, r *http.Request) {
 	var user User
@@ -123,7 +120,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} ResponseAddress "Успешное выполнение"
 // @Success 400 {object} ErrorResponse "Ошибка запроса"
 // @Success 500 {object} ErrorResponse "Ошибка подключения к серверу"
-
 func getGeoCoordinates(query string) (string, error) {
 	url := "http://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
 	reqData := map[string]string{"query": query}
