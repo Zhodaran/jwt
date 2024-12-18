@@ -117,6 +117,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 // @Description This endpoint allows you to get geo coordinates by address
 // @Param address body RequestAddressSearch true "Address search query"
 // @Router /api/address/geocode [post]
+// @Router /api/address/search [post]
 // @Success 200 {object} ResponseAddress "Успешное выполнение"
 // @Success 400 {object} ErrorResponse "Ошибка запроса"
 // @Success 500 {object} ErrorResponse "Ошибка подключения к серверу"
