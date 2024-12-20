@@ -147,18 +147,26 @@ func getGeoCoordinates(query string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(string(body))
 	var response ResponseAddress
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		panic(err)
+		return ResponseAddresses{}, err
 	}
 
-	if len(response.Suggestions) > 0 {
-		return fmt.Sprintf("%s %s", response.Suggestions[0].Address.Lat, response.Suggestions[0].Address.Lng), nil
+	var addresses ResponseAddresses
+	for _, suggestion := range response.Suggestions {
+		address := &Address{
+			City:   suggestion.Address.City,
+			Street: suggestion.Address.Street,
+			House:  suggestion.Address.House,
+			Lat:    suggestion.Address.Lat,
+			Lon:    suggestion.Address.Lon,
+		}
+		addresses.Addresses = append(addresses.Addresses, address)
 	}
 
-	return "", fmt.Errorf("no suggestions found")
+	return addresses, nil
+
 }
 
 func main() {
@@ -177,22 +185,46 @@ func main() {
 		r.Post("/api/register", Register)
 		r.Post("/api/login", Login)
 		r.Post("/api/address/geocode", func(w http.ResponseWriter, r *http.Request) {
-			geo, err := getGeoCoordinates("москва сухонская 11") // Здесь можно передать запрос из тела
+			var req RequestAddressSearch
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			geo, err := GetGeoCoordinates(req.Query) // Здесь можно передать запрос из тела
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			w.Write([]byte(geo))
+			jsonData, err := json.Marshal(geo)
+			if err != nil {
+				panic(err)
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Write(jsonData)
+
 		})
 
 		r.Post("/api/address/search", func(w http.ResponseWriter, r *http.Request) {
-			geo, err := getGeoCoordinates("москва сухонская 11") // Здесь можно передать запрос из тела
+			var req RequestAddressSearch
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			geo, err := GetGeoCoordinates(req.Query) // Здесь можно передать запрос из тела
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			proxyMiddleware(geo)(w, r)
+			jsonData, err := json.Marshal(geo)
+			if err != nil {
+				panic(err)
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Write(jsonData)
+
 		})
 
 		http.ListenAndServe(":8080", r)
