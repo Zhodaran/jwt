@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "This is a sample server Petstore server.",
-        "title": "Swagger Example API",
+        "description": "Этот эндпоинт позволяет получить адрес по наименованию",
+        "title": "Address API",
         "contact": {},
         "version": "1.0"
     },
@@ -84,6 +84,26 @@
         }
     },
     "definitions": {
+        "main.Address": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "house": {
+                    "type": "string"
+                },
+                "lat": {
+                    "type": "string"
+                },
+                "lon": {
+                    "type": "string"
+                },
+                "street": {
+                    "type": "string"
+                }
+            }
+        },
         "main.ErrorResponse": {
             "description": "Ошибка, возникающая при обработке запроса",
             "type": "object",
@@ -116,30 +136,12 @@
                         "type": "object",
                         "properties": {
                             "data": {
-                                "$ref": "#/definitions/main.ResponseAddresses"
+                                "$ref": "#/definitions/main.Address"
                             }
                         }
                     }
                 }
             }
-        },
-        "main.ResponseAddresses": {
-            "type": "object",
-            "properties": {
-                "geo_lat": {
-                    "type": "string"
-                },
-                "geo_lon": {
-                    "type": "string"
-                }
-            }
-        }
-    },
-    "securityDefinitions": {
-        "ApiKeyAuth": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
         }
     }
 }

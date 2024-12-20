@@ -1,4 +1,17 @@
 definitions:
+  main.Address:
+    properties:
+      city:
+        type: string
+      house:
+        type: string
+      lat:
+        type: string
+      lon:
+        type: string
+      street:
+        type: string
+    type: object
   main.ErrorResponse:
     description: Ошибка, возникающая при обработке запроса
     properties:
@@ -20,22 +33,15 @@ definitions:
         items:
           properties:
             data:
-              $ref: '#/definitions/main.ResponseAddresses'
+              $ref: '#/definitions/main.Address'
           type: object
         type: array
-    type: object
-  main.ResponseAddresses:
-    properties:
-      geo_lat:
-        type: string
-      geo_lon:
-        type: string
     type: object
 host: localhost:8080
 info:
   contact: {}
-  description: This is a sample server Petstore server.
-  title: Swagger Example API
+  description: Этот эндпоинт позволяет получить адрес по наименованию
+  title: Address API
   version: "1.0"
 paths:
   /api/address/geocode:
@@ -86,9 +92,4 @@ paths:
           schema:
             $ref: '#/definitions/main.ErrorResponse'
       summary: Get Geo Coordinates
-securityDefinitions:
-  ApiKeyAuth:
-    in: header
-    name: Authorization
-    type: apiKey
 swagger: "2.0"

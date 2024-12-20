@@ -91,6 +91,26 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "main.Address": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "house": {
+                    "type": "string"
+                },
+                "lat": {
+                    "type": "string"
+                },
+                "lon": {
+                    "type": "string"
+                },
+                "street": {
+                    "type": "string"
+                }
+            }
+        },
         "main.ErrorResponse": {
             "description": "Ошибка, возникающая при обработке запроса",
             "type": "object",
@@ -123,30 +143,12 @@ const docTemplate = `{
                         "type": "object",
                         "properties": {
                             "data": {
-                                "$ref": "#/definitions/main.ResponseAddresses"
+                                "$ref": "#/definitions/main.Address"
                             }
                         }
                     }
                 }
             }
-        },
-        "main.ResponseAddresses": {
-            "type": "object",
-            "properties": {
-                "geo_lat": {
-                    "type": "string"
-                },
-                "geo_lon": {
-                    "type": "string"
-                }
-            }
-        }
-    },
-    "securityDefinitions": {
-        "ApiKeyAuth": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
         }
     }
 }`
@@ -157,8 +159,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "Swagger Example API",
-	Description:      "This is a sample server Petstore server.",
+	Title:            "Address API",
+	Description:      "Этот эндпоинт позволяет получить адрес по наименованию",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

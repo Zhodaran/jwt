@@ -1,12 +1,3 @@
-// @title Address API
-// @version 1.0
-// @description This is a simple API for address geocoding and user authentication.
-// @host localhost:8080
-// @BasePath /api
-// @securityDefinitions.apiKey ApiKeyAuth
-// @in header
-// @name Authorization
-
 package main
 
 import (
@@ -16,12 +7,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
-	_ "proxy/docs"
+	_ "studentgit.kata.academy/Zhodaran/go-kata/docs"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/v5/middleware"
@@ -30,24 +24,27 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// @title Swagger Example API
+// @title Address API
 // @version 1.0
-// @description This is a sample server Petstore server.
-
-// @Host("api.swagger.com")
+// @description API для поиска
+// @host localhost:8080
 // @BasePath
+
+// @RequestAddressSearch представляет запрос для поиска
+// @Description Этот эндпоинт позволяет получить адрес по наименованию
+// @Param address body ResponseAddress true "Географические координаты"
+
 type RequestAddressSearch struct {
 	Query string `json:"query"`
 }
 
 type ResponseAddresses struct {
-	Lat string `json:"geo_lat"`
-	Lng string `json:"geo_lon"`
+	Addresses []*Address `json:"addresses"`
 }
 
 type ResponseAddress struct {
 	Suggestions []struct {
-		Address ResponseAddresses `json:"data"`
+		Address Address `json:"data"`
 	} `json:"suggestions"`
 }
 
@@ -113,6 +110,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// @Success 200 {object} ResponseAddress
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+
+// Логика геокодирования
 // @Summary Get Geo Coordinates
 // @Description This endpoint allows you to get geo coordinates by address
 // @Param address body RequestAddressSearch true "Address search query"
@@ -121,17 +123,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} ResponseAddress "Успешное выполнение"
 // @Success 400 {object} ErrorResponse "Ошибка запроса"
 // @Success 500 {object} ErrorResponse "Ошибка подключения к серверу"
-func getGeoCoordinates(query string) (string, error) {
+func GetGeoCoordinates(query string) (ResponseAddresses, error) {
 	url := "http://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address"
 	reqData := map[string]string{"query": query}
 
 	jsonData, err := json.Marshal(reqData)
 	if err != nil {
-		panic(err)
+		return ResponseAddresses{}, err
 	}
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		panic(err)
+		return ResponseAddresses{}, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -139,14 +141,15 @@ func getGeoCoordinates(query string) (string, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		panic(err)
+		return ResponseAddresses{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return ResponseAddresses{}, err
 	}
+
 	var response ResponseAddress
 	err = json.Unmarshal(body, &response)
 	if err != nil {
@@ -166,21 +169,20 @@ func getGeoCoordinates(query string) (string, error) {
 	}
 
 	return addresses, nil
-
 }
 
 func main() {
 	signalChan := make(chan os.Signal, 1)
-
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	r := chi.NewRouter()
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: r,
 	}
-
 	go func() {
+
 		r.Use(middleware.Logger)
+		r.Use(proxyMiddleware)
 		r.Get("/swagger/*", httpSwagger.WrapHandler)
 		r.Post("/api/register", Register)
 		r.Post("/api/login", Login)
@@ -202,7 +204,6 @@ func main() {
 			}
 			w.WriteHeader(http.StatusOK)
 			w.Write(jsonData)
-
 		})
 
 		r.Post("/api/address/search", func(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +225,6 @@ func main() {
 			}
 			w.WriteHeader(http.StatusOK)
 			w.Write(jsonData)
-
 		})
 
 		http.ListenAndServe(":8080", r)
@@ -233,15 +233,23 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		fmt.Printf("Ошибка при завершении %v", err)
+		fmt.Printf("Ошибка при завершении работы %v", err)
 	} else {
-		fmt.Printf("Grace close")
+		fmt.Printf("Server stopped gracefully")
 	}
 }
 
-func proxyMiddleware(geo string) http.HandlerFunc {
+func proxyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(geo))
+		// Проверяем, если путь начинается с /api
+		if strings.HasPrefix(r.URL.Path, "/api") {
+			// Передаем управление следующему обработчику
+			next.ServeHTTP(w, r)
+			return
+		}
+		// Перенаправление на hugo
+		proxyURL, _ := url.Parse("http://hugo:1313")
+		proxy := httputil.NewSingleHostReverseProxy(proxyURL)
+		proxy.ServeHTTP(w, r)
 	})
 }
