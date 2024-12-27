@@ -228,8 +228,7 @@ func GetGeoCoordinatesAddress(query string) (ResponseAddresses, error) {
 // @Tags geo
 // @Accept json
 // @Produce json
-// @Param lat query float64 true "Latitude"
-// @Param lng query float64 true "Longitude"
+// @Param body body GeocodeRequest true "Geographic coordinates"
 // @Param Authorization header string true "Bearer {token}"
 // @Success 200 {object} ResponseAddress "Успешное выполнение"
 // @Failure 400 {object} ErrorResponse "Ошибка запроса"

@@ -35,18 +35,13 @@ const docTemplate = `{
                 "summary": "Get Geo Coordinates by Latitude and Longitude",
                 "parameters": [
                     {
-                        "type": "number",
-                        "description": "Latitude",
-                        "name": "lat",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "number",
-                        "description": "Longitude",
-                        "name": "lng",
-                        "in": "query",
-                        "required": true
+                        "description": "Geographic coordinates",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.GeocodeRequest"
+                        }
                     },
                     {
                         "type": "string",
@@ -273,6 +268,17 @@ const docTemplate = `{
                 },
                 "500": {
                     "type": "string"
+                }
+            }
+        },
+        "main.GeocodeRequest": {
+            "type": "object",
+            "properties": {
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
                 }
             }
         },
