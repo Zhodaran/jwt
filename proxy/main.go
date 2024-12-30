@@ -117,20 +117,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Используем логин пользователя в качестве user_id
-	claims := map[string]interface{}{
-		"user_id": user.Username, // Используем username как user_id
-		"exp":     time.Now().Add(time.Hour * 72).Unix(),
-	}
-	_, tokenString, err := tokenAuth.Encode(claims)
-	if err != nil {
-		http.Error(w, "Could not create token", http.StatusInternalServerError)
-		return
-	}
 
-	w.Header().Set("Authorization", "Bearer "+tokenString)
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(TokenResponse{Token: tokenString})
-	fmt.Println(tokenString)
 }
 
 // @Summary Login a user
@@ -161,6 +148,20 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	// Если авторизация успешна, возвращаем статус 200 OK
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(LoginResponse{Message: "Login successful"})
+	claims := map[string]interface{}{
+		"user_id": user.Username, // Используем username как user_id
+		"exp":     time.Now().Add(time.Hour * 72).Unix(),
+	}
+	_, tokenString, err := tokenAuth.Encode(claims)
+	if err != nil {
+		http.Error(w, "Could not create token", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Authorization", "Bearer "+tokenString)
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(TokenResponse{Token: tokenString})
+	fmt.Println(tokenString)
 }
 
 // @Summary Get Geo Coordinates by Address
